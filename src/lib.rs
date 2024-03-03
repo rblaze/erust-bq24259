@@ -1,6 +1,8 @@
 #![cfg_attr(not(test), no_std)]
 #![deny(unsafe_code)]
 
+pub mod registers;
+
 use embedded_hal::i2c::I2c;
 
 const ADDR: u8 = 0x6b;
@@ -19,22 +21,22 @@ impl<I2C: I2c> BQ24259<I2C> {
     }
 
     pub fn status(&mut self) -> Result<u8, I2C::Error> {
-        self.read(8)
+        self.read(registers::REG_SYSTEM_STATUS)
     }
 
     pub fn faults(&mut self) -> Result<u8, I2C::Error> {
-        self.read(9)
+        self.read(registers::REG_NEW_FAULT)
     }
 
-    // Reads register and returns its value
-    fn read(&mut self, register: u8) -> Result<u8, I2C::Error> {
+    // Reads register and returns its value.
+    pub fn read(&mut self, register: u8) -> Result<u8, I2C::Error> {
         let mut value = [0u8; 1];
         self.i2c.write_read(ADDR, &[register], &mut value)?;
         Ok(value[0])
     }
 
     // Reads register, updates it and writes back.
-    fn update(&mut self, register: u8, update: fn(u8) -> u8) -> Result<(), I2C::Error> {
+    pub fn update(&mut self, register: u8, update: fn(u8) -> u8) -> Result<(), I2C::Error> {
         let value = self.read(register)?;
         self.i2c.write(ADDR, &[register, update(value)])
     }
