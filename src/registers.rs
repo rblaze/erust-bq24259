@@ -1,5 +1,7 @@
 //! I2C control and status registers
 
+use bitfield::bitfield;
+
 /// Input Source Control Register REG00
 pub const REG_INPUT_SOURCE_CONTROL: u8 = 0x00;
 
@@ -27,8 +29,32 @@ pub const REG_MISC_OPERATION_CONTROL: u8 = 0x07;
 /// System Status Register REG08
 pub const REG_SYSTEM_STATUS: u8 = 0x08;
 
+bitfield! {
+    /// System Status Register description
+    pub struct SystemStatus(u8);
+    impl Debug;
+    pub vbus_stat, _: 7,6;
+    pub chrg_stat, _: 5,4;
+    pub dpm_stat, _: 3;
+    pub pg_stat, _: 2;
+    pub therm_stat, _: 1;
+    pub vsys_stat, _: 0;
+}
+
 /// New Fault Register REG09
 pub const REG_NEW_FAULT: u8 = 0x09;
+
+bitfield! {
+    /// System Status Register description
+    pub struct NewFault(u8);
+    impl Debug;
+    pub watchdog_fault, _: 7;
+    pub otg_fault, _: 6;
+    pub chrg_fault, _: 5, 4;
+    pub bat_fault, _: 3;
+    pub ntc_fault_cold, _: 1;
+    pub ntc_fault_hot, _: 0;
+}
 
 /// Vender / Part / Revision Status Register REG0A
 pub const REG_VENDOR: u8 = 0x0A;

@@ -20,12 +20,14 @@ impl<I2C: I2c> BQ24259<I2C> {
         self.update(5, |v| v & 0b11001111)
     }
 
-    pub fn status(&mut self) -> Result<u8, I2C::Error> {
-        self.read(registers::REG_SYSTEM_STATUS)
+    pub fn status(&mut self) -> Result<registers::SystemStatus, I2C::Error> {
+        let value = self.read(registers::REG_SYSTEM_STATUS)?;
+        Ok(registers::SystemStatus(value))
     }
 
-    pub fn faults(&mut self) -> Result<u8, I2C::Error> {
-        self.read(registers::REG_NEW_FAULT)
+    pub fn new_fault(&mut self) -> Result<registers::NewFault, I2C::Error> {
+        let value = self.read(registers::REG_NEW_FAULT)?;
+        Ok(registers::NewFault(value))
     }
 
     // Reads register and returns its value.
