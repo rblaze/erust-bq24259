@@ -112,7 +112,10 @@ mod tests {
             BQ24259::<DummyBus>::ichg_to_milliamps(u5::new(0b11000)),
             2048
         );
-        assert_eq!(BQ24259::<DummyBus>::ichg_to_milliamps(u5::new(0b01100)), 1280);
+        assert_eq!(
+            BQ24259::<DummyBus>::ichg_to_milliamps(u5::new(0b01100)),
+            1280
+        );
         // Zero value means 512
         assert_eq!(BQ24259::<DummyBus>::ichg_to_milliamps(u5::new(0)), 512);
     }
