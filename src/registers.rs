@@ -10,6 +10,25 @@ pub const REG_INPUT_SOURCE_CONTROL: u8 = 0x00;
 /// Power-On Configuration Register REG01
 pub const REG_POWER_ON_CONFIGURATION: u8 = 0x01;
 
+#[bitsize(1)]
+#[derive(FromBits, Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum BoostLim {
+    Amp1_0 = 0,
+    Amp1_5 = 1,
+}
+
+/// Power-On Configuration Register
+#[bitsize(8)]
+#[derive(FromBits)]
+pub struct PowerOnConfiguration {
+    pub boost_lim: BoostLim,
+    pub sys_min: u3,
+    pub en_charge: bool,
+    pub en_otg: bool,
+    pub watchdog_reset: bool,
+    pub register_reset: bool,
+}
+
 /// Charge Current Control Register REG02
 pub const REG_CHARGE_CURRENT_CONTROL: u8 = 0x02;
 
@@ -135,6 +154,17 @@ pub const EXPECTED_VENDOR_VALUE: u8 = 0b00100000;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn power_on_configuration() {
+        let reg = PowerOnConfiguration::from(0b00011011);
+        assert_eq!(reg.register_reset(), false);
+        assert_eq!(reg.watchdog_reset(), false);
+        assert_eq!(reg.en_otg(), false);
+        assert_eq!(reg.en_charge(), true);
+        assert_eq!(u8::from(reg.sys_min()), 0b101);
+        assert_eq!(reg.boost_lim(), BoostLim::Amp1_5);
+    }
 
     #[test]
     fn charge_current_control() {

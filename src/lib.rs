@@ -25,6 +25,14 @@ impl<I2C: I2c> BQ24259<I2C> {
         })
     }
 
+    pub fn reset_watchdog(&mut self) -> Result<(), I2C::Error> {
+        self.update(registers::REG_POWER_ON_CONFIGURATION, |v| {
+            let mut reg = registers::PowerOnConfiguration::from(v);
+            reg.set_watchdog_reset(true);
+            reg.into()
+        })
+    }
+
     pub fn status(&mut self) -> Result<registers::SystemStatus, I2C::Error> {
         let value = self.read(registers::REG_SYSTEM_STATUS)?;
         Ok(registers::SystemStatus::from(value))
