@@ -19,7 +19,7 @@ pub enum BoostLim {
 
 /// Power-On Configuration Register
 #[bitsize(8)]
-#[derive(FromBits)]
+#[derive(FromBits, DebugBits, Copy, Clone)]
 pub struct PowerOnConfiguration {
     pub boost_lim: BoostLim,
     pub sys_min: u3,
@@ -33,7 +33,7 @@ pub struct PowerOnConfiguration {
 pub const REG_CHARGE_CURRENT_CONTROL: u8 = 0x02;
 
 #[bitsize(8)]
-#[derive(FromBits)]
+#[derive(FromBits, DebugBits, Copy, Clone)]
 pub struct ChargeCurrentControl {
     pub force_20pct: bool,
     pub bcold: bool,
@@ -70,7 +70,7 @@ pub enum Watchdog {
 
 /// Charge Termination/Timer Control Register
 #[bitsize(8)]
-#[derive(FromBits, DebugBits)]
+#[derive(FromBits, DebugBits, Copy, Clone)]
 pub struct ChargeTerminationTimerControl {
     reserved: u1,
     pub charge_timer: ChgTimer,
@@ -109,7 +109,7 @@ pub enum Chrg {
 
 /// System Status Register
 #[bitsize(8)]
-#[derive(FromBits, DebugBits)]
+#[derive(FromBits, DebugBits, Copy, Clone)]
 pub struct SystemStatus {
     pub vsys: bool,
     pub therm: bool,
@@ -134,7 +134,7 @@ pub enum ChrgFault {
 
 /// New Fault Register
 #[bitsize(8)]
-#[derive(FromBits, DebugBits)]
+#[derive(FromBits, DebugBits, Copy, Clone)]
 pub struct NewFault {
     pub ntc_hot: bool,
     pub ntc_cold: bool,
