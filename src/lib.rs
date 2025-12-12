@@ -138,12 +138,12 @@ mod tests {
         assert_eq!(BQ24259::<DummyBus>::milliamps_to_ichg(896).value(), 0b00110);
         // Zero value means 512
         assert_eq!(BQ24259::<DummyBus>::milliamps_to_ichg(512).value(), 0);
-        // Value clumps to 2048 from the top
+        // Value clamps to 2048 from the top
         assert_eq!(
             BQ24259::<DummyBus>::milliamps_to_ichg(10000).value(),
             0b11000
         );
-        // Value clumps to 512 from the bottom
+        // Value clamps to 512 from the bottom
         assert_eq!(BQ24259::<DummyBus>::milliamps_to_ichg(5).value(), 0);
     }
 }
