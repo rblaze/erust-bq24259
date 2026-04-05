@@ -25,6 +25,14 @@ impl<I2C: I2c> BQ24259<I2C> {
         })
     }
 
+    pub fn set_watchdog_timeout(&mut self, timeout: registers::Watchdog) -> Result<(), I2C::Error> {
+        self.update(registers::REG_TERM_TIMER_CONTROL, |v| {
+            let mut reg = registers::ChargeTerminationTimerControl::from(v);
+            reg.set_watchdog(timeout);
+            reg.into()
+        })
+    }
+
     pub fn reset_watchdog(&mut self) -> Result<(), I2C::Error> {
         self.update(registers::REG_POWER_ON_CONFIGURATION, |v| {
             let mut reg = registers::PowerOnConfiguration::from(v);
@@ -86,30 +94,48 @@ impl<I2C: I2c> BQ24259<I2C> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use embedded_hal::i2c::{Error, ErrorType};
+    use embedded_hal::i2c::{Error, ErrorType, Operation};
 
-    #[derive(Debug)]
-    enum DummyError {}
+    #[derive(Debug, PartialEq, Eq)]
+    enum DummyError {
+        I2c,
+    }
 
     impl Error for DummyError {
         fn kind(&self) -> embedded_hal::i2c::ErrorKind {
-            unimplemented!()
+            embedded_hal::i2c::ErrorKind::Other
         }
     }
 
-    struct DummyBus {}
+    struct MockBus {
+        pub write_data: Vec<Vec<u8>>,
+        pub read_data: Vec<u8>,
+    }
 
-    impl ErrorType for DummyBus {
+    impl ErrorType for MockBus {
         type Error = DummyError;
     }
 
-    impl I2c for DummyBus {
+    impl I2c for MockBus {
         fn transaction(
             &mut self,
             _address: u8,
-            _operations: &mut [embedded_hal::i2c::Operation<'_>],
+            operations: &mut [Operation<'_>],
         ) -> Result<(), Self::Error> {
-            unimplemented!()
+            for op in operations {
+                match op {
+                    Operation::Write(data) => {
+                        self.write_data.push(data.to_vec());
+                    }
+                    Operation::Read(data) => {
+                        if self.read_data.is_empty() {
+                            return Err(DummyError::I2c);
+                        }
+                        data[0] = self.read_data.remove(0);
+                    }
+                }
+            }
+            Ok(())
         }
     }
 
@@ -117,33 +143,49 @@ mod tests {
     fn ichg_read() {
         // Default value means 2048
         assert_eq!(
-            BQ24259::<DummyBus>::ichg_to_milliamps(u5::new(0b11000)),
+            BQ24259::<MockBus>::ichg_to_milliamps(u5::new(0b11000)),
             2048
         );
         assert_eq!(
-            BQ24259::<DummyBus>::ichg_to_milliamps(u5::new(0b01100)),
+            BQ24259::<MockBus>::ichg_to_milliamps(u5::new(0b01100)),
             1280
         );
         // Zero value means 512
-        assert_eq!(BQ24259::<DummyBus>::ichg_to_milliamps(u5::new(0)), 512);
+        assert_eq!(BQ24259::<MockBus>::ichg_to_milliamps(u5::new(0)), 512);
     }
 
     #[test]
     fn ichg_write() {
         // Default value means 2048
-        assert_eq!(
-            BQ24259::<DummyBus>::milliamps_to_ichg(2048).value(),
-            0b11000
-        );
-        assert_eq!(BQ24259::<DummyBus>::milliamps_to_ichg(896).value(), 0b00110);
+        assert_eq!(BQ24259::<MockBus>::milliamps_to_ichg(2048).value(), 0b11000);
+        assert_eq!(BQ24259::<MockBus>::milliamps_to_ichg(896).value(), 0b00110);
         // Zero value means 512
-        assert_eq!(BQ24259::<DummyBus>::milliamps_to_ichg(512).value(), 0);
+        assert_eq!(BQ24259::<MockBus>::milliamps_to_ichg(512).value(), 0);
         // Value clamps to 2048 from the top
         assert_eq!(
-            BQ24259::<DummyBus>::milliamps_to_ichg(10000).value(),
+            BQ24259::<MockBus>::milliamps_to_ichg(10000).value(),
             0b11000
         );
         // Value clamps to 512 from the bottom
-        assert_eq!(BQ24259::<DummyBus>::milliamps_to_ichg(5).value(), 0);
+        assert_eq!(BQ24259::<MockBus>::milliamps_to_ichg(5).value(), 0);
+    }
+
+    #[test]
+    fn set_watchdog_timeout() {
+        let mut bus = MockBus {
+            write_data: Vec::new(),
+            read_data: vec![0x02],
+        };
+        let mut bq = BQ24259::new(&mut bus);
+
+        bq.set_watchdog_timeout(registers::Watchdog::Sec160)
+            .unwrap();
+
+        assert_eq!(bus.write_data.len(), 2);
+        assert_eq!(bus.write_data[0], vec![registers::REG_TERM_TIMER_CONTROL]);
+        assert_eq!(
+            bus.write_data[1],
+            vec![registers::REG_TERM_TIMER_CONTROL, 0x32]
+        );
     }
 }
